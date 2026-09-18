@@ -1,3 +1,6 @@
+import type { Id } from '@feathersjs/feathers'
+import { NotFound } from '@feathersjs/errors'
+
 // This is the interface for the message data
 export interface Message {
   id?: number
@@ -7,39 +10,40 @@ export interface Message {
 
 export class MessageService {
   messages: Message[] = []
+  // Ever-increasing counter so ids are never reused after a message is removed
+  private nextId = 0
 
   async find() {
     // Just return all our messages
     return this.messages
   }
 
-  async get(id: number) {
-    return this.messages.find(message => message.id === id)
+  // Ids arrive as strings over REST (e.g. `/messages/1`), so compare numerically
+  async get(id: Id) {
+    const message = this.messages.find(message => message.id === Number(id))
+    if (!message) {
+      throw new NotFound(`No message found for id '${id}'`)
+    }
+    return message
   }
 
-  async update(id: number, data: Partial<Pick<Message, 'text'>>) {
+  async update(id: Id, data: Partial<Pick<Message, 'text'>>) {
     const message = await this.get(id)
-    if (!message) {
-      return null
-    }
     if (data.text !== undefined) {
       message.text = data.text
     }
     return message
   }
 
-  async remove(id: number) {
-    const index = this.messages.findIndex(message => message.id === id)
-    if (index === -1) {
-      return null
-    }
-    const [removedMessage] = this.messages.splice(index, 1)
-    return removedMessage
+  async remove(id: Id) {
+    const message = await this.get(id)
+    this.messages.splice(this.messages.indexOf(message), 1)
+    return message
   }
 
   async create(data: Pick<Message, 'text'>) {
     const message: Message = {
-      id: this.messages.length,
+      id: this.nextId++,
       text: data.text,
       createdAt: new Date(),
     }

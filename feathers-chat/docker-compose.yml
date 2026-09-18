@@ -1,0 +1,43 @@
+name: feathers-chat
+
+services:
+  app:
+    build: .
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 3030
+      # `mongo` is the service name below, resolved on the compose network
+      MONGODB_URL: mongodb://mongo:27017/feathers-chat
+    ports:
+      # Host port defaults to 3031 because 3030 is often taken on the host.
+      # Override with e.g. `APP_PORT=8080 docker compose up`
+      - '${APP_PORT:-3031}:3030'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3030/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      # Only reachable from this machine, on 27018 to avoid clashing with a
+      # MongoDB already on 27017. Lets `npm run dev` on the host use this database:
+      #   MONGODB_URL=mongodb://127.0.0.1:27018/feathers-chat npm run dev
+      - '127.0.0.1:${MONGO_PORT:-27018}:27017'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

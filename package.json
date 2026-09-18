@@ -4,7 +4,10 @@
   "description": "",
   "scripts": {
     "start": "tsx app.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docker:up": "npm --prefix feathers-chat run docker:up",
+    "docker:down": "npm --prefix feathers-chat run docker:down",
+    "docker:logs": "npm --prefix feathers-chat run docker:logs"
   },
   "repository": {
     "type": "git",
@@ -23,6 +26,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@feathersjs/errors": "^5.0.50",
     "@feathersjs/feathers": "^5.0.50",
     "@feathersjs/koa": "^5.0.50",
     "@feathersjs/socketio": "^5.0.50"

@@ -1,39 +1,42 @@
 import { feathers } from '@feathersjs/feathers'
-import { MessageService, type Message } from './message.service.js'
+import { koa, rest, bodyParser, errorHandler, serveStatic } from '@feathersjs/koa'
+import socketio from '@feathersjs/socketio'
+import { MessageService } from './message.service.js'
 
 // This tells TypeScript what services we are registering
 type ServiceTypes = {
   messages: MessageService
 }
 
-const app = feathers<ServiceTypes>()
+// Creates an KoaJS compatible Feathers application
+const app = koa<ServiceTypes>(feathers())
 
-// Register the message service on the Feathers application
+// Host static files from `public/` only, so source and config files are not served
+app.use(serveStatic('public'))
+// Register the error handle
+app.use(errorHandler())
+// Parse JSON request bodies
+app.use(bodyParser())
+
+// Register REST service handler
+app.configure(rest())
+// Configure Socket.io real-time APIs
+app.configure(socketio())
+// Register our messages service
 app.use('messages', new MessageService())
 
-// Log every time a new message has been created
-app.service('messages').on('created', (message: Message) => {
-  console.log('A new message has been created', message)
-})
+// Add any new real-time connection to the `everybody` channel
+app.on('connection', (connection) => app.channel('everybody').join(connection))
+// Publish all events to the `everybody` channel
+app.publish((_data) => app.channel('everybody'))
 
+// Start the server (override the port with the PORT environment variable)
+const port = Number(process.env.PORT ?? 3030)
 
-const main = async () => {
-  await app.service('messages').create({
-    text: 'Hello Feathers'
-  })
+app
+  .listen(port)
+  .then(() => console.log(`Feathers server listening on localhost:${port}`))
 
-  // And another one
-  await app.service('messages').create({
-    text: 'Hello again'
-  })
+// For good measure let's create a message
+// So our API doesn't look so empty
 
-  await app.service('messages').update(0, { text: 'Updated message' })
-  await app.service('messages').remove(1)   
-
-  // Find all existing messages
-  const messages = await app.service('messages').find()
-
-  console.log('All messages', messages)
-}
-
-main()

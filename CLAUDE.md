@@ -29,11 +29,13 @@ they are populated.
 
 ### Commands
 
-npm, TypeScript 7, ESM (`"type": "module"`). Currently a single Feathers quick-start
-script (`app.ts`), uncommitted.
+npm, TypeScript 7, ESM (`"type": "module"`). Currently the Feathers quick-start server,
+uncommitted.
 
 - `npm install` — install dependencies
-- `npm start` — run `app.ts` via `tsx`
+- `npm start` — run the server (`app.ts` via `tsx`) on port 3030
+- `PORT=3031 npm start` — run on another port. On this machine a Docker container
+  (`sandbox-public-api`) often holds 3030, which makes `npm start` fail with `EADDRINUSE`
 - `npm run typecheck` — `tsc --noEmit`
 
 Do not use `ts-node`: TypeScript 7 (the native compiler) ships no JS compiler API, so
@@ -44,8 +46,22 @@ No build, lint, or test commands yet.
 
 ### Architecture
 
-_None yet._ Describe the directory layout, routing, state management, data fetching/API
-layer, and styling approach once they are established.
+Flat layout, no `src/` yet.
+
+- `app.ts` — Feathers 5 app on Koa (`@feathersjs/koa`): static hosting of `public/` only
+  (never the repo root — that exposes source and config), REST, and Socket.io (`@feathersjs/socketio`). Every connection joins the `everybody`
+  channel and all service events are published to it.
+- `message.service.ts` — in-memory `MessageService` (`find`/`get`/`create`/`update`/`remove`),
+  registered at `messages`. Ids arrive as strings over REST, so the service coerces them;
+  missing ids throw `NotFound` from `@feathersjs/errors`.
+
+Relative imports use the `.js` extension (`./message.service.js`) because of
+`"module": "nodenext"`.
+
+- `public/index.html` — the Feathers quick-start chat page: plain HTML with an inline
+  script, Feathers client and styles from CDNs, no build step. It connects with `io()`
+  (same origin) so it works on whatever `PORT` the server uses, and renders message text
+  with `textContent` because messages come from other users.
 
 ### Conventions
 

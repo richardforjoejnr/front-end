@@ -1,0 +1,12 @@
+node_modules
+lib
+test
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.log
+*.tgz
+.env*
+readme.md
