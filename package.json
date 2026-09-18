@@ -1,0 +1,31 @@
+{
+  "name": "front-end",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "tsx app.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richardforjoejnr/front-end.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/richardforjoejnr/front-end/issues"
+  },
+  "homepage": "https://github.com/richardforjoejnr/front-end#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@feathersjs/feathers": "^5.0.50",
+    "@feathersjs/koa": "^5.0.50",
+    "@feathersjs/socketio": "^5.0.50"
+  },
+  "type": "module"
+}
