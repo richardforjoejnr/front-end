@@ -2,10 +2,10 @@ import { xssPayload } from '../../support/data/Chat.content';
 import { test } from '../../support/fixtures';
 
 test.describe('Chat Send Message', () => {
-  test('User can send a message and see it appear @Smoke', async ({ chatPage, messagesDataManager }) => {
+  test('User can send a message and see it appear @Smoke', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const text = messagesDataManager.uniqueText('Sent from the form');
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldBeLoaded();
 
     // Act
@@ -19,10 +19,10 @@ test.describe('Chat Send Message', () => {
     messagesDataManager.track(created._id);
   });
 
-  test('The input is cleared after sending @regression', async ({ chatPage, messagesDataManager }) => {
+  test('The input is cleared after sending @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const text = messagesDataManager.uniqueText('Clears input');
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldBeLoaded();
 
     // Act
@@ -35,10 +35,10 @@ test.describe('Chat Send Message', () => {
     messagesDataManager.track(created._id);
   });
 
-  test('A sent message is persisted and survives a reload @regression', async ({ chatPage, messagesDataManager }) => {
+  test('A sent message is persisted and survives a reload @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const text = messagesDataManager.uniqueText('Persisted');
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldBeLoaded();
 
     // Act
@@ -53,12 +53,12 @@ test.describe('Chat Send Message', () => {
     messagesDataManager.track(created._id);
   });
 
-  test('Message text is rendered as text, never as HTML @regression', async ({ chatPage, messagesDataManager }) => {
+  test('Message text is rendered as text, never as HTML @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange - a message that would execute if the page used innerHTML
     const message = await messagesDataManager.create(`${xssPayload} ${messagesDataManager.uniqueText('XSS')}`);
 
     // Act
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
 
     // Assert
     await chatPage.shouldShowMessage(message._id, message.text);

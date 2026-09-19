@@ -8,6 +8,14 @@ export const content = {
     messagesTitle: 'Messages',
     sendButton: 'Send',
     deleteButtonLabel: 'Delete message',
+    signInButton: 'Sign in',
+    registerButton: 'Register',
+    signOutButton: 'Sign out',
+  },
+  loginErrors: {
+    invalidCredentials: 'Invalid email or password',
+    missingFields: 'Enter an email and password to register',
+    emailTaken: 'That email is already registered',
   },
   errors: {
     notFound: 'NotFound',

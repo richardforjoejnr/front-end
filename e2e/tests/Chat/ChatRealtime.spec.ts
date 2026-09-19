@@ -9,10 +9,9 @@ import ChatPage from '../../support/pages/Chat.page';
 test.describe('Chat Real-time Updates', () => {
   test('A message created through the API appears without a reload @Smoke', async ({
     chatPage,
-    messagesDataManager,
-  }) => {
+    messagesDataManager, chatUser }) => {
     // Arrange
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldBeLoaded();
 
     // Act - create it after the page is open
@@ -24,11 +23,10 @@ test.describe('Chat Real-time Updates', () => {
 
   test('A message deleted through the API disappears without a reload @regression', async ({
     chatPage,
-    messagesDataManager,
-  }) => {
+    messagesDataManager, chatUser }) => {
     // Arrange
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Removed live'));
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(message._id, message.text);
 
     // Act
@@ -42,14 +40,13 @@ test.describe('Chat Real-time Updates', () => {
   test('A message sent in one tab appears in another @regression', async ({
     chatPage,
     messagesDataManager,
-    context,
-  }) => {
+    context, chatUser }) => {
     // Arrange - two pages on the same app, as two people would have
     const text = messagesDataManager.uniqueText('Two tabs');
     const secondChatPage = new ChatPage(await context.newPage());
 
-    await chatPage.visit();
-    await secondChatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
+    await secondChatPage.visitSignedIn(chatUser.accessToken);
     await secondChatPage.shouldBeLoaded();
 
     // Act - send from the first tab
@@ -65,14 +62,13 @@ test.describe('Chat Real-time Updates', () => {
   test('A message deleted in one tab disappears in another @regression', async ({
     chatPage,
     messagesDataManager,
-    context,
-  }) => {
+    context, chatUser }) => {
     // Arrange
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Deleted in two tabs'));
     const secondChatPage = new ChatPage(await context.newPage());
 
-    await chatPage.visit();
-    await secondChatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
+    await secondChatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(message._id, message.text);
     await secondChatPage.shouldShowMessage(message._id, message.text);
 

@@ -41,6 +41,14 @@ class ChatPage extends BasePage {
     return this.page.getByTestId('chat-send-button');
   }
 
+  get logoutButton() {
+    return this.page.getByTestId('chat-logout-button');
+  }
+
+  get currentUser() {
+    return this.page.getByTestId('chat-current-user');
+  }
+
   get messagesTitle() {
     return this.page.getByTestId('chat-messages-title');
   }
@@ -77,6 +85,22 @@ class ChatPage extends BasePage {
   #############
   */
 
+  /**
+   * Seeds the JWT the page looks for on load, so a test that is not about signing in
+   * lands straight on the chat. The UI sign-in flow is covered in SignIn.spec.ts.
+   */
+  async visitSignedIn(accessToken: string) {
+    await this.page.addInitScript(token => {
+      window.localStorage.setItem('feathers-jwt', token);
+    }, accessToken);
+
+    await this.visit();
+  }
+
+  async signOut() {
+    await this.logoutButton.click();
+  }
+
   async sendMessage(text: string) {
     await this.messageInput.fill(text);
     await this.sendButton.click();
@@ -97,6 +121,7 @@ class ChatPage extends BasePage {
   */
 
   async shouldBeLoaded() {
+    await expect(this.container).toBeVisible();
     await expect(this.title).toHaveText(this.content.title);
     await expect(this.messagesTitle).toHaveText(this.content.messagesTitle);
     await expect(this.messageInput).toBeVisible();
@@ -118,6 +143,11 @@ class ChatPage extends BasePage {
 
     await expect(button).toBeVisible();
     await expect(button).toHaveAttribute('aria-label', this.content.deleteButtonLabel);
+  }
+
+  async shouldShowSignedInAs(email: string) {
+    await expect(this.currentUser).toHaveText(email);
+    await expect(this.logoutButton).toBeVisible();
   }
 
   async shouldHaveEmptyInput() {
