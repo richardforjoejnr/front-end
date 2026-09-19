@@ -1,5 +1,12 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+
+  // This config belongs to the legacy root quick-start app ONLY. Without an explicit
+  // `include` it swallows the whole repo, and `feathers-chat/` and `e2e/` then get
+  // checked with these settings instead of their own — which is wrong for both,
+  // because this app is ESM ("type": "module") and they are CommonJS.
+  "include": ["app.ts", "message.service.ts"],
+
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",

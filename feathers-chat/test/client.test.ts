@@ -1,6 +1,6 @@
 import assert from 'assert'
 import axios from 'axios'
-import type { Server } from 'http'
+import { describe, it } from 'vitest'
 import { app } from '../src/app'
 import { createClient } from '../src/client'
 

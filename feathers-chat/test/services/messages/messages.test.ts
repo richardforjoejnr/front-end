@@ -1,6 +1,7 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.test.html
 // Needs the MongoDB from docker-compose.yml (`docker compose up -d mongo`), see config/test.json
 import assert from 'assert'
+import { afterEach, describe, it } from 'vitest'
 import { app } from '../../../src/app'
 
 describe('messages service', () => {

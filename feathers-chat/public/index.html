@@ -12,16 +12,31 @@
     <link rel="stylesheet" href="https://feathersjs.com/feathers-chat.css" />
   </head>
   <body data-theme="dracula">
-    <main id="main" class="p-8">
-      <h1 class="font-medium leading-tight text-5xl mt-0 mb-2">Welcome to Feathers</h1>
+    <main id="main" class="p-8" data-test="chat-page">
+      <h1 class="font-medium leading-tight text-5xl mt-0 mb-2" data-test="chat-title">
+        Welcome to Feathers
+      </h1>
 
       <div class="form-control w-full py-2">
-        <form class="input-group overflow-hidden" onsubmit="sendMessage(event)">
-          <input name="message" id="message-text" type="text" class="input input-bordered w-full" />
-          <button type="submit" class="btn">Send</button>
+        <form
+          class="input-group overflow-hidden"
+          data-test="chat-send-form"
+          onsubmit="sendMessage(event)"
+        >
+          <input
+            name="message"
+            id="message-text"
+            type="text"
+            class="input input-bordered w-full"
+            aria-label="Message"
+            data-test="chat-message-input"
+          />
+          <button type="submit" class="btn" data-test="chat-send-button">Send</button>
         </form>
       </div>
-      <h2 class="pt-1 pb-2 text-lg">Messages</h2>
+      <h2 class="pt-1 pb-2 text-lg" data-test="chat-messages-title">Messages</h2>
+
+      <div data-test="chat-messages-list"></div>
     </main>
 
     <script src="//unpkg.com/@feathersjs/client@^5.0.0/dist/feathers.js"></script>
@@ -29,19 +44,14 @@
     <script type="text/javascript">
       // Set up socket.io, connecting back to whichever host/port served this page
       const socket = io()
-      // Initialize a Feathers app
       const app = feathers()
-
-      // Register socket.io to talk to our server
       app.configure(feathers.socketio(socket))
 
-      // Form submission handler that sends a new message
       async function sendMessage(event) {
         const messageInput = document.getElementById('message-text')
 
         event.preventDefault()
 
-        // Create a new message with the input field value
         await app.service('messages').create({
           text: messageInput.value
         })
@@ -54,10 +64,11 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
       </svg>`
 
+      const messagesList = document.querySelector('[data-test="chat-messages-list"]')
+
       // The rendered element of every message on the page, by message id
       const messageElements = new Map()
 
-      // Removes a message from the page
       function removeMessage(message) {
         const chat = messageElements.get(message._id)
 
@@ -85,7 +96,7 @@
         }
       }
 
-      // Renders a single message on the page
+      // Locators follow docs/playwright-locator-strategy.md: {scope}-{component}-{variant}
       function addMessage(message) {
         const chat = document.createElement('div')
         const bubble = document.createElement('div')
@@ -93,21 +104,27 @@
         const deleteButton = document.createElement('button')
 
         chat.className = 'chat chat-start'
+        chat.dataset.test = `chat-messages-list-item-${message._id}`
+        chat.dataset.messageId = message._id
+
         bubble.className = 'chat-bubble flex items-center gap-2'
+
         // textContent, not innerHTML: message text comes from other users
         text.textContent = message.text
+        text.dataset.test = `chat-messages-list-item-text-${message._id}`
 
         deleteButton.type = 'button'
         deleteButton.className = 'btn btn-ghost btn-xs btn-circle'
         deleteButton.title = 'Delete message'
         deleteButton.setAttribute('aria-label', 'Delete message')
+        deleteButton.dataset.test = `chat-messages-list-item-delete-button-${message._id}`
         deleteButton.innerHTML = trashIcon
         deleteButton.addEventListener('click', () => deleteMessage(message, deleteButton))
 
         bubble.appendChild(text)
         bubble.appendChild(deleteButton)
         chat.appendChild(bubble)
-        document.getElementById('main').appendChild(chat)
+        messagesList.appendChild(chat)
         messageElements.set(message._id, chat)
       }
 
@@ -121,13 +138,11 @@
           }
         })
 
-        // Add existing messages to the list, oldest first
+        // Oldest first
         messages.data.reverse().forEach(addMessage)
 
-        // Add any newly created message to the list in real-time
+        // The page is only ever updated from these events, so every tab stays in sync
         app.service('messages').on('created', addMessage)
-
-        // Remove any deleted message from the list in real-time
         app.service('messages').on('removed', removeMessage)
       }
 

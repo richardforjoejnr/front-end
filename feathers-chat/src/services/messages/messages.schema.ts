@@ -7,7 +7,6 @@ import type { HookContext } from '../../declarations'
 import { dataValidator, queryValidator } from '../../validators'
 import type { MessagesService } from './messages.class'
 
-// Main data model schema
 export const messagesSchema = {
   $id: 'Messages',
   type: 'object',
@@ -26,7 +25,6 @@ export const messagesResolver = resolve<Messages, HookContext<MessagesService>>(
 
 export const messagesExternalResolver = resolve<Messages, HookContext<MessagesService>>({})
 
-// Schema for creating new data
 export const messagesDataSchema = {
   $id: 'MessagesData',
   type: 'object',
@@ -43,7 +41,6 @@ export const messagesDataResolver = resolve<Messages, HookContext<MessagesServic
   createdAt: async () => new Date().toISOString()
 })
 
-// Schema for updating existing data
 export const messagesPatchSchema = {
   $id: 'MessagesPatch',
   type: 'object',
@@ -57,7 +54,6 @@ export type MessagesPatch = FromSchema<typeof messagesPatchSchema>
 export const messagesPatchValidator = getValidator(messagesPatchSchema, dataValidator)
 export const messagesPatchResolver = resolve<MessagesPatch, HookContext<MessagesService>>({})
 
-// Schema for allowed query properties
 export const messagesQuerySchema = {
   $id: 'MessagesQuery',
   type: 'object',

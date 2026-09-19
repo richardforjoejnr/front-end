@@ -1,0 +1,13 @@
+{
+  // The build config one level up excludes `test`, so without this the editor falls back
+  // to the repo-root config and reports the wrong module system and no mocha globals.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // Vitest's describe/it/expect are imported explicitly, so no test-runner types here
+    "types": ["node"],
+    // Editor/typecheck only — `npm run compile` still builds src via ../tsconfig.json
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": ["**/*.ts", "../src/**/*.ts"]
+}

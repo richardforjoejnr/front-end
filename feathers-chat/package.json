@@ -39,13 +39,13 @@
     "compile": "shx rm -rf lib/ && tsc",
     "start": "node lib/",
     "prettier": "npx prettier \"**/*.ts\" --write",
-    "mocha": "cross-env NODE_ENV=test mocha test/ --require ts-node/register --recursive --extension .ts --exit",
-    "test": "npm run mocha",
+    "test": "vitest run",
     "bundle:client": "npm run compile && npm pack --pack-destination ./public",
     "docker:up": "docker compose up -d --build --wait && npm run --silent docker:url",
     "docker:url": "printf '\\n  Feathers chat is running at http://localhost:%s\\n\\n' \"$(docker compose port app 3030 | sed 's/.*://')\"",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f app"
+    "docker:logs": "docker compose logs -f app",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@feathersjs/adapter-commons": "^5.0.50",
@@ -66,15 +66,13 @@
   "devDependencies": {
     "@feathersjs/cli": "^5.0.50",
     "@feathersjs/rest-client": "^5.0.50",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^26.6.1",
     "axios": "^1.20.0",
-    "cross-env": "^10.1.0",
-    "mocha": "^12.0.2",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.8",
     "shx": "^0.4.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.1"
   }
 }

@@ -2,6 +2,7 @@
 import assert from 'assert'
 import axios from 'axios'
 import type { Server } from 'http'
+import { afterAll, beforeAll, describe, it } from 'vitest'
 import { app } from '../src/app'
 
 const port = app.get('port')
@@ -10,12 +11,13 @@ const appUrl = `http://${app.get('host')}:${port}`
 describe('Feathers application tests', () => {
   let server: Server
 
-  before(async () => {
+  beforeAll(async () => {
     server = await app.listen(port)
   })
 
-  after(async () => {
+  afterAll(async () => {
     await app.teardown()
+    server.close()
   })
 
   it('starts and shows the index page', async () => {

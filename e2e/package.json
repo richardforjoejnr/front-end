@@ -1,0 +1,26 @@
+{
+  "name": "feathers-chat-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright UI and API integration tests for the feathers-chat app",
+  "scripts": {
+    "test": "playwright test --project=chromium --project=api",
+    "test:ui": "playwright test --project=chromium",
+    "test:api": "playwright test --project=api",
+    "test:smoke": "playwright test --grep @Smoke",
+    "test:regression": "playwright test --grep @regression",
+    "test:tag": "playwright test --grep \"@$TAG\"",
+    "test:headed": "playwright test --project=chromium --headed",
+    "test:debug": "playwright test --project=chromium --debug",
+    "test:watch": "playwright test --project=chromium --ui",
+    "codegen": "playwright codegen http://localhost:3031",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.9.3"
+  }
+}
