@@ -125,7 +125,11 @@
         loginSection.classList.remove('hidden')
       }
 
+      // The signed-in user's id: only the author can delete a message
+      let currentUserId = null
+
       async function showChat(user) {
+        currentUserId = user._id
         currentUser.textContent = user.email
         loginSection.classList.add('hidden')
         chatSection.classList.remove('hidden')
@@ -231,13 +235,20 @@
       // Locators follow docs/playwright-locator-strategy.md: {scope}-{component}-{variant}
       function addMessage(message) {
         const chat = document.createElement('div')
+        const author = document.createElement('div')
         const bubble = document.createElement('div')
         const text = document.createElement('span')
-        const deleteButton = document.createElement('button')
+        const isMine = message.userId === currentUserId
 
-        chat.className = 'chat chat-start'
+        // Your own messages on the right, everybody else's on the left
+        chat.className = isMine ? 'chat chat-end' : 'chat chat-start'
         chat.dataset.test = `chat-messages-list-item-${message._id}`
         chat.dataset.messageId = message._id
+
+        // `user` is missing once the author deleted their account
+        author.className = 'chat-header text-xs opacity-70'
+        author.textContent = message.user ? message.user.email : 'Deleted user'
+        author.dataset.test = `chat-messages-list-item-author-${message._id}`
 
         bubble.className = 'chat-bubble flex items-center gap-2'
 
@@ -245,16 +256,23 @@
         text.textContent = message.text
         text.dataset.test = `chat-messages-list-item-text-${message._id}`
 
-        deleteButton.type = 'button'
-        deleteButton.className = 'btn btn-ghost btn-xs btn-circle'
-        deleteButton.title = 'Delete message'
-        deleteButton.setAttribute('aria-label', 'Delete message')
-        deleteButton.dataset.test = `chat-messages-list-item-delete-button-${message._id}`
-        deleteButton.innerHTML = trashIcon
-        deleteButton.addEventListener('click', () => deleteMessage(message, deleteButton))
-
         bubble.appendChild(text)
-        bubble.appendChild(deleteButton)
+
+        // The server refuses to delete somebody else's message, so do not offer it
+        if (isMine) {
+          const deleteButton = document.createElement('button')
+
+          deleteButton.type = 'button'
+          deleteButton.className = 'btn btn-ghost btn-xs btn-circle'
+          deleteButton.title = 'Delete message'
+          deleteButton.setAttribute('aria-label', 'Delete message')
+          deleteButton.dataset.test = `chat-messages-list-item-delete-button-${message._id}`
+          deleteButton.innerHTML = trashIcon
+          deleteButton.addEventListener('click', () => deleteMessage(message, deleteButton))
+          bubble.appendChild(deleteButton)
+        }
+
+        chat.appendChild(author)
         chat.appendChild(bubble)
         messagesList.appendChild(chat)
         messageElements.set(message._id, chat)

@@ -1,6 +1,8 @@
-import { type APIRequestContext, test as base, expect } from '@playwright/test';
+import { type APIRequestContext, expect, mergeTests } from '@playwright/test';
 
 import { generateUniqueName } from '../helper';
+import { chatUserFixture } from './chatUser.fixture';
+import { usersDataManagerFixture } from './usersDataManager.fixture';
 import {
   type Message,
   type MessagePage,
@@ -11,9 +13,12 @@ import {
 } from '../helper/utils/api/messagesRequests';
 
 export interface MessagesDataManager {
+  /** Every request on this context is made as the worker's `chatUser`. */
   api: APIRequestContext;
-  /** Creates a message through the API and removes it when the test ends. */
+  /** Creates a message as `chatUser` through the API and removes it when the test ends. */
   create(text?: string): Promise<Message>;
+  /** Creates a message as somebody else, for the rules about messages that are not yours. */
+  createAs(author: { accessToken: string }, text?: string): Promise<Message>;
   createMany(count: number, prefix?: string): Promise<Message[]>;
   find(query?: Record<string, string | number>): Promise<MessagePage>;
   findByText(text: string): Promise<Message[]>;
@@ -27,11 +32,18 @@ export interface MessagesDataManager {
 /**
  * Tests share one database, so each test cleans up only what it created. Deleting
  * everything would break the other tests running in parallel.
+ *
+ * Only the author can delete a message, so the manager seeds as `chatUser` — the user the
+ * chat specs are signed in as — and remembers the token of anything seeded as someone else.
+ * Depending on `usersDataManager` makes this tear down first, while those users still exist.
  */
-export const messagesDataManagerFixture = base.extend<{ messagesDataManager: MessagesDataManager }>({
-  messagesDataManager: async ({}, use) => {
-    const api = await newMessagesContext();
-    const created = new Set<string>();
+export const messagesDataManagerFixture = mergeTests(chatUserFixture, usersDataManagerFixture).extend<{
+  messagesDataManager: MessagesDataManager;
+}>({
+  messagesDataManager: async ({ chatUser, usersDataManager: _usersDataManager }, use) => {
+    const api = await newMessagesContext(chatUser.accessToken);
+    // Message id -> the token to delete it with, when that is not chatUser's
+    const created = new Map<string, string | undefined>();
 
     const manager: MessagesDataManager = {
       api,
@@ -46,7 +58,18 @@ export const messagesDataManagerFixture = base.extend<{ messagesDataManager: Mes
         expect(response.status(), `Could not seed a message: ${await response.text()}`).toBe(201);
 
         const message = (await response.json()) as Message;
-        created.add(message._id);
+        created.set(message._id, undefined);
+
+        return message;
+      },
+
+      async createAs(author, text = generateUniqueName('Playwright')) {
+        const response = await createMessage(api, { text }, author.accessToken);
+
+        expect(response.status(), `Could not seed a message: ${await response.text()}`).toBe(201);
+
+        const message = (await response.json()) as Message;
+        created.set(message._id, author.accessToken);
 
         return message;
       },
@@ -76,7 +99,7 @@ export const messagesDataManagerFixture = base.extend<{ messagesDataManager: Mes
       },
 
       track(id) {
-        created.add(id);
+        created.set(id, undefined);
       },
 
       untrack(id) {
@@ -87,8 +110,8 @@ export const messagesDataManagerFixture = base.extend<{ messagesDataManager: Mes
     await use(manager);
 
     // Ignore anything the test already deleted itself
-    for (const id of created) {
-      await removeMessage(api, id).catch(() => undefined);
+    for (const [id, accessToken] of created) {
+      await removeMessage(api, id, accessToken).catch(() => undefined);
     }
 
     await api.dispose();

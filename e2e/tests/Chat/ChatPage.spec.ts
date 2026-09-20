@@ -32,6 +32,25 @@ test.describe('Chat Page', () => {
     await chatPage.shouldHaveDeleteButton(message._id);
   });
 
+  test('Each message shows who wrote it @regression', async ({
+    chatPage,
+    messagesDataManager,
+    usersDataManager,
+    chatUser,
+  }) => {
+    // Arrange
+    const somebodyElse = await usersDataManager.createAndSignIn();
+    const mine = await messagesDataManager.create();
+    const theirs = await messagesDataManager.createAs(somebodyElse);
+
+    // Act
+    await chatPage.visitSignedIn(chatUser.accessToken);
+
+    // Assert
+    await chatPage.shouldShowAuthor(mine._id, chatUser.email);
+    await chatPage.shouldShowAuthor(theirs._id, somebodyElse.email);
+  });
+
   test('Messages are listed oldest first @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const [first, second] = await messagesDataManager.createMany(2, 'Order');

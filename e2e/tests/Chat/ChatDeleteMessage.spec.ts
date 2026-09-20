@@ -16,6 +16,24 @@ test.describe('Chat Delete Message', () => {
     messagesDataManager.untrack(message._id);
   });
 
+  test("Somebody else's message has no delete icon @Smoke", async ({
+    chatPage,
+    messagesDataManager,
+    usersDataManager,
+    chatUser,
+  }) => {
+    // Arrange
+    const somebodyElse = await usersDataManager.createAndSignIn();
+    const theirs = await messagesDataManager.createAs(somebodyElse, messagesDataManager.uniqueText('Not mine'));
+
+    // Act
+    await chatPage.visitSignedIn(chatUser.accessToken);
+
+    // Assert
+    await chatPage.shouldShowMessage(theirs._id, theirs.text);
+    await chatPage.shouldNotHaveDeleteButton(theirs._id);
+  });
+
   test('A deleted message is gone from the server @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Deleted on server'));

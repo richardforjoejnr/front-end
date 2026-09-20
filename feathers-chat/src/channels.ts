@@ -3,13 +3,8 @@ import type { RealTimeConnection, Params } from '@feathersjs/feathers'
 import type { AuthenticationResult } from '@feathersjs/authentication'
 import '@feathersjs/transport-commons'
 import type { Application, HookContext } from './declarations'
-import { logger } from './logger'
 
 export const channels = (app: Application) => {
-  logger.warn(
-    'Publishing all events to all connected users, including anonymous ones. See `channels.ts` and https://dove.feathersjs.com/api/channels.html for more information.'
-  )
-
   app.on('connection', (connection: RealTimeConnection) => {
     app.channel('anonymous').join(connection)
   })
@@ -24,11 +19,18 @@ export const channels = (app: Application) => {
     }
   })
 
+  app.on('logout', (authResult: AuthenticationResult, { connection }: Params) => {
+    // A socket that signs out stays connected, so stop sending it events
+    if (connection) {
+      app.channel('authenticated').leave(connection)
+
+      app.channel('anonymous').join(connection)
+    }
+  })
+
   // eslint-disable-next-line no-unused-vars
   app.publish((data: any, context: HookContext) => {
-    // There is no authentication yet, so nobody ever joins `authenticated`.
-    // Publish to anonymous connections too, or no client receives real-time events.
-    // Once authentication is added, change this back to `app.channel('authenticated')`
-    return app.channel('anonymous', 'authenticated')
+    // Only signed-in connections: every service that emits events requires a JWT to read
+    return app.channel('authenticated')
   })
 }

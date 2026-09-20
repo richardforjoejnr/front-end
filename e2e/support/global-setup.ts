@@ -12,7 +12,11 @@ async function globalSetup() {
   try {
     const response = await context.get(messagesUrl, { timeout: 10000 });
 
-    if (!response.ok()) {
+    // `messages` needs a token, so a Feathers NotAuthenticated is the healthy answer. It
+    // also shows this is the chat app, and not whatever else might hold the port
+    const body = await response.json().catch(() => undefined);
+
+    if (response.status() !== 401 || body?.name !== 'NotAuthenticated') {
       throw new Error(`${messagesUrl} responded ${response.status()} ${response.statusText()}`);
     }
 
