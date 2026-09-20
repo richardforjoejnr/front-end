@@ -2,10 +2,10 @@ import { expect, test } from '../../support/fixtures';
 
 
 test.describe('Chat Delete Message', () => {
-  test('User can delete a message with the delete icon @Smoke', async ({ chatPage, messagesDataManager }) => {
+  test('User can delete a message with the delete icon @Smoke', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Delete me'));
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(message._id, message.text);
 
     // Act
@@ -16,10 +16,10 @@ test.describe('Chat Delete Message', () => {
     messagesDataManager.untrack(message._id);
   });
 
-  test('A deleted message is gone from the server @regression', async ({ chatPage, messagesDataManager }) => {
+  test('A deleted message is gone from the server @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Deleted on server'));
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(message._id, message.text);
 
     // Act
@@ -32,10 +32,10 @@ test.describe('Chat Delete Message', () => {
     messagesDataManager.untrack(message._id);
   });
 
-  test('Deleting one message leaves the others @regression', async ({ chatPage, messagesDataManager }) => {
+  test('Deleting one message leaves the others @regression', async ({ chatPage, messagesDataManager, chatUser }) => {
     // Arrange
     const [keep, remove] = await messagesDataManager.createMany(2, 'Delete one of two');
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(remove._id, remove.text);
 
     // Act
@@ -50,12 +50,11 @@ test.describe('Chat Delete Message', () => {
   test('Deleting a message already removed elsewhere clears it from the page @regression', async ({
     chatPage,
     messagesDataManager,
-    page,
-  }) => {
+    page, chatUser }) => {
     // Arrange - somebody else deleted this message a moment ago, so the delete icon on
     // this page is stale. Answering 404 is how the server reports that.
     const message = await messagesDataManager.create(messagesDataManager.uniqueText('Already gone'));
-    await chatPage.visit();
+    await chatPage.visitSignedIn(chatUser.accessToken);
     await chatPage.shouldShowMessage(message._id, message.text);
 
     await page.route(`**/messages/${message._id}`, async route => {

@@ -12,10 +12,66 @@
     <link rel="stylesheet" href="https://feathersjs.com/feathers-chat.css" />
   </head>
   <body data-theme="dracula">
-    <main id="main" class="p-8" data-test="chat-page">
-      <h1 class="font-medium leading-tight text-5xl mt-0 mb-2" data-test="chat-title">
+    <section id="login" class="p-8 hidden" data-test="login-page">
+      <h1 class="font-medium leading-tight text-5xl mt-0 mb-2" data-test="login-title">
         Welcome to Feathers
       </h1>
+
+      <form class="w-full max-w-sm py-2" data-test="login-form" onsubmit="signIn(event)">
+        <div
+          class="alert alert-error my-2 hidden"
+          role="alert"
+          data-test="login-error-alert"
+        ></div>
+
+        <label class="label" for="login-email">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          autocomplete="username"
+          required
+          class="input input-bordered w-full"
+          data-test="login-email-input"
+        />
+
+        <label class="label" for="login-password">Password</label>
+        <input
+          id="login-password"
+          type="password"
+          autocomplete="current-password"
+          required
+          class="input input-bordered w-full"
+          data-test="login-password-input"
+        />
+
+        <div class="flex gap-2 pt-4">
+          <button type="submit" class="btn btn-primary" data-test="login-submit-button">
+            Sign in
+          </button>
+          <button
+            type="button"
+            class="btn"
+            data-test="login-register-button"
+            onclick="register(event)"
+          >
+            Register
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <main id="main" class="p-8 hidden" data-test="chat-page">
+      <div class="flex items-center justify-between gap-4">
+        <h1 class="font-medium leading-tight text-5xl mt-0 mb-2" data-test="chat-title">
+          Welcome to Feathers
+        </h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm opacity-70" data-test="chat-current-user"></span>
+          <button type="button" class="btn btn-sm" data-test="chat-logout-button" onclick="logout()">
+            Sign out
+          </button>
+        </div>
+      </div>
 
       <div class="form-control w-full py-2">
         <form
@@ -46,6 +102,82 @@
       const socket = io()
       const app = feathers()
       app.configure(feathers.socketio(socket))
+      // The JWT lives in localStorage so a reload can resume the session
+      app.configure(feathers.authentication({ storage: window.localStorage }))
+
+      const loginSection = document.getElementById('login')
+      const chatSection = document.getElementById('main')
+      const loginError = document.querySelector('[data-test="login-error-alert"]')
+      const currentUser = document.querySelector('[data-test="chat-current-user"]')
+
+      function showLoginError(message) {
+        loginError.textContent = message
+        loginError.classList.remove('hidden')
+      }
+
+      function clearLoginError() {
+        loginError.textContent = ''
+        loginError.classList.add('hidden')
+      }
+
+      function showLogin() {
+        chatSection.classList.add('hidden')
+        loginSection.classList.remove('hidden')
+      }
+
+      async function showChat(user) {
+        currentUser.textContent = user.email
+        loginSection.classList.add('hidden')
+        chatSection.classList.remove('hidden')
+        await loadMessages()
+      }
+
+      function credentials() {
+        return {
+          email: document.querySelector('[data-test="login-email-input"]').value,
+          password: document.querySelector('[data-test="login-password-input"]').value
+        }
+      }
+
+      async function signIn(event) {
+        event.preventDefault()
+        clearLoginError()
+
+        try {
+          const { user } = await app.authenticate({ strategy: 'local', ...credentials() })
+
+          await showChat(user)
+        } catch (error) {
+          // Never say which of the two was wrong — that would confirm an email exists
+          showLoginError('Invalid email or password')
+        }
+      }
+
+      async function register() {
+        clearLoginError()
+
+        const { email, password } = credentials()
+
+        if (!email || !password) {
+          showLoginError('Enter an email and password to register')
+          return
+        }
+
+        try {
+          await app.service('users').create({ email, password })
+          const { user } = await app.authenticate({ strategy: 'local', email, password })
+
+          await showChat(user)
+        } catch (error) {
+          showLoginError(error.message || 'Could not register')
+        }
+      }
+
+      async function logout() {
+        await app.logout()
+        // Reload rather than unpicking the rendered messages by hand
+        window.location.reload()
+      }
 
       async function sendMessage(event) {
         const messageInput = document.getElementById('message-text')
@@ -128,7 +260,14 @@
         messageElements.set(message._id, chat)
       }
 
-      const main = async () => {
+      let messagesLoaded = false
+
+      const loadMessages = async () => {
+        if (messagesLoaded) {
+          return
+        }
+        messagesLoaded = true
+
         // Find the latest 25 messages. The service is paginated, so the
         // result is a `{ total, limit, skip, data }` page and not an array
         const messages = await app.service('messages').find({
@@ -146,7 +285,11 @@
         app.service('messages').on('removed', removeMessage)
       }
 
-      main()
+      // A stored JWT resumes the session; anything else means signing in
+      app
+        .reAuthenticate()
+        .then(({ user }) => showChat(user))
+        .catch(() => showLogin())
     </script>
   </body>
 </html>

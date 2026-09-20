@@ -33,14 +33,19 @@ support/
   fixtures/        index.ts merges them; specs import `test` from here
     pageManager.ts           Page Objects as fixtures
     messagesDataManager...   Seeds messages and cleans up only what it created
+    usersDataManager...      Registers users, signs them in, deletes them at teardown
+    chatUser.fixture.ts      One signed-in user per worker, for specs that just need a session
     logManager.ts            Fails a test on an uncaught browser error
     beforefterManager.ts     Per-test / per-worker hooks
   pages/           Page Objects: Base.page.ts, Chat.page.ts
   helper/          Shared helpers, plus utils/api/ for the REST layer
   data/            Copy the tests assert on
 tests/
-  Chat/            UI specs (chromium project)
-  Api/             API specs (api project, no browser)
+  Chat/            UI specs (chromium project) — chat, sign-in, real-time
+  Api/             HTTP-contract specs (api project, no browser)
+
+Service rules live in feathers-chat/test (Vitest), not here. This suite only covers what
+needs a browser or the wire: see the test pyramid section in ../CLAUDE.md.
 ```
 
 ## Conventions

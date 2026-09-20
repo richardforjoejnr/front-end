@@ -9,7 +9,8 @@ type Translations = {
  * true of any page in the app.
  */
 class BasePage {
-  protected page: Page;
+  /** Public so a spec can reach Playwright's own page APIs when no locator fits. */
+  public page: Page;
   protected hash: string;
   protected translations: Translations;
 
