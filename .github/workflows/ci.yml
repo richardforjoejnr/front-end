@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # 1. Unit tests and typecheck. Everything else waits on this, so a broken build or a
+  # failing unit test costs seconds rather than a full Docker build and browser run.
+  unit:
+    name: Typecheck and unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: feathers-chat
+
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: feathers-chat/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Unit tests
+        # Vitest sets NODE_ENV=test, so node-config reads config/test.json — which points
+        # at the compose MongoDB on 27018. In CI the service container is on 27017, and
+        # MONGODB_URL overrides the file (see config/custom-environment-variables.json)
+        env:
+          MONGODB_URL: mongodb://127.0.0.1:27017/feathers-chat-test
+        run: npm test
+
+  # 2. Build the image, start app + MongoDB, then run the UI and API suites against it.
+  e2e:
+    name: Build and E2E tests
+    runs-on: ubuntu-latest
+    needs: unit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Build image and start the stack
+        working-directory: feathers-chat
+        run: docker compose up -d --build --wait
+
+      - name: Install test dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI and API tests
+        working-directory: e2e
+        # The suite defaults to the localhost environment, which reads APP_PORT
+        run: npm test
+
+      - name: App logs
+        if: failure()
+        working-directory: feathers-chat
+        run: docker compose logs --no-color --tail 200
+
+      - name: Stop the stack
+        if: always()
+        working-directory: feathers-chat
+        run: docker compose down -v
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # The commit is in the name so a downloaded report says which one it is
+          name: playwright-report-${{ github.sha }}
+          path: e2e/playwright-report/
+          retention-days: 14
+
+      - name: Package report for Pages
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: e2e/playwright-report/
+
+  # 3. Publish the HTML report to GitHub Pages. Runs even when tests fail — a failing
+  # report is the one worth reading.
+  publish-report:
+    name: Publish report to Pages
+    runs-on: ubuntu-latest
+    needs: e2e
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
