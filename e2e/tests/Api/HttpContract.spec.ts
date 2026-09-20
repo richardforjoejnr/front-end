@@ -9,6 +9,7 @@ import { createMessage, findMessages } from '../../support/helper/utils/api/mess
  * a transport serialises the response.
  */
 test.describe('HTTP Contract', () => {
+  // `messagesDataManager.api` sends the worker's chatUser token with every request
   test('The messages service answers over REST @Smoke', async ({ messagesDataManager }) => {
     const created = await createMessage(messagesDataManager.api, { text: 'Over HTTP' });
 

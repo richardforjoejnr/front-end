@@ -57,9 +57,9 @@ class ChatPage extends BasePage {
     return this.page.getByTestId('chat-messages-list');
   }
 
-  /** Every rendered message, matched on the `chat-messages-list-item-{id}` prefix. */
+  /** Every rendered message. Only the item itself carries `data-message-id`. */
   get messageItems() {
-    return this.page.locator('[data-test^="chat-messages-list-item-"]:not([data-test*="-text-"])');
+    return this.page.locator('[data-test^="chat-messages-list-item-"][data-message-id]');
   }
 
   /** Every message's text node, in render order. */
@@ -73,6 +73,10 @@ class ChatPage extends BasePage {
 
   messageText(id: string) {
     return this.page.getByTestId(`chat-messages-list-item-text-${id}`);
+  }
+
+  messageAuthor(id: string) {
+    return this.page.getByTestId(`chat-messages-list-item-author-${id}`);
   }
 
   deleteButton(id: string) {
@@ -143,6 +147,16 @@ class ChatPage extends BasePage {
 
     await expect(button).toBeVisible();
     await expect(button).toHaveAttribute('aria-label', this.content.deleteButtonLabel);
+  }
+
+  /** Only the author can delete a message, so nobody else is offered the icon. */
+  async shouldNotHaveDeleteButton(id: string) {
+    await expect(this.messageItem(id)).toBeVisible({ timeout: environment.realtimeTimeout });
+    await expect(this.deleteButton(id)).toHaveCount(0);
+  }
+
+  async shouldShowAuthor(id: string, email: string) {
+    await expect(this.messageAuthor(id)).toHaveText(email);
   }
 
   async shouldShowSignedInAs(email: string) {

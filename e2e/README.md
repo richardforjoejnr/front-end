@@ -32,7 +32,7 @@ config/            One file per environment; index.ts picks by NODE_ENV (default
 support/
   fixtures/        index.ts merges them; specs import `test` from here
     pageManager.ts           Page Objects as fixtures
-    messagesDataManager...   Seeds messages and cleans up only what it created
+    messagesDataManager...   Seeds messages as chatUser (createAs for others), cleans up its own
     usersDataManager...      Registers users, signs them in, deletes them at teardown
     chatUser.fixture.ts      One signed-in user per worker, for specs that just need a session
     logManager.ts            Fails a test on an uncaught browser error
@@ -61,3 +61,5 @@ needs a browser or the wire: see the test pyramid section in ../CLAUDE.md.
 - **Data isolation**: tests run fully parallel against one database. Create data through
   `messagesDataManager` so it is cleaned up, and use `uniqueText()` for anything asserted on.
   Never delete all messages — other workers are using them.
+- **Authorship**: only the author can delete a message. `create()` seeds as `chatUser`, the
+  user the chat specs are signed in as; `createAs(otherUser)` seeds somebody else's.

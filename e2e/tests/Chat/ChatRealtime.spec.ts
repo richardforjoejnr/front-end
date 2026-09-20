@@ -37,6 +37,26 @@ test.describe('Chat Real-time Updates', () => {
     await chatPage.shouldNotShowMessage(message._id);
   });
 
+  test('A message from somebody else arrives with their name and no delete icon @regression', async ({
+    chatPage,
+    messagesDataManager,
+    usersDataManager,
+    chatUser,
+  }) => {
+    // Arrange
+    const somebodyElse = await usersDataManager.createAndSignIn();
+    await chatPage.visitSignedIn(chatUser.accessToken);
+    await chatPage.shouldBeLoaded();
+
+    // Act - they post after the page is open, so it arrives as a `created` event
+    const theirs = await messagesDataManager.createAs(somebodyElse, messagesDataManager.uniqueText('From a friend'));
+
+    // Assert - the event carries the populated author, the same as a find does
+    await chatPage.shouldShowMessage(theirs._id, theirs.text);
+    await chatPage.shouldShowAuthor(theirs._id, somebodyElse.email);
+    await chatPage.shouldNotHaveDeleteButton(theirs._id);
+  });
+
   test('A message sent in one tab appears in another @regression', async ({
     chatPage,
     messagesDataManager,
