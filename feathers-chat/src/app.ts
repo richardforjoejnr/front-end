@@ -20,6 +20,7 @@ import { mongodb } from './mongodb'
 import { authentication } from './authentication'
 import { services } from './services/index'
 import { channels } from './channels'
+import { logServiceEvents } from './service-events'
 
 const app: Application = express(feathers())
 
@@ -44,6 +45,7 @@ app.configure(mongodb)
 app.configure(authentication)
 app.configure(services)
 app.configure(channels)
+app.configure(logServiceEvents)
 
 // Configure a middleware for 404s and the error handler
 app.use(notFound())
